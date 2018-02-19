@@ -17,11 +17,76 @@ var lives = 3;
 var score = 0;
 var radius = [];
 var path = [];//1 straight //2 curve up //3 curve down //4 curve right //5 curve left //6 up left //7 down left //8 down right //9 up right
+var audioElement;
+var loadCount = 0;
+var itemsToLoad = 0;
+var blastSound = "blast.mp3";
+var laserSound = "laser.mp3";
+var lostLifeSound = "pain.mp3";
+var gameOver = "gameover.mp3"
+var sounds = new Array();
+var gameON = 1;
+
+
+window.addEventListener('load',eventWindowLoaded,false);
+
+/*function eventWindowLoaded(){
+	blastSound = document.createElement("audio");
+	document.body.appendChild(blastSound);;
+	audioElement.addEventListener("canplaythrough",itemLoaded,false);
+	blastSound.setAttribute("src","blast.mp3");
+
+	laserSound = document.createElement("audio");
+	document.body.appendChild(laserSound);
+	laserSound.addEventListener("canplaythrough",itemLoaded,false);
+	laserSound.setAttribute("src","laser.mp3");
+
+	lostLifeSound = document.createElement("audio");
+	document.body.appendChild(lostLifeSound);
+	lostLifeSound.addEventListener("canplaythrough",itemLoaded,false);
+	lostLifeSound.setAttribute("src","pain.mp3");
+}*/
+
+function itemLoaded(event){
+	loadCount++;
+	if(loadCount >= itemsToLoad){
+		laserSound.removeEventListener("canplaythrough",itemLoaded,false);
+		blastSound.removeEventListener("canplaythrough",itemLoaded,false);
+		lostLifeSound.removeEventListener("canplaythrough",itemLoaded,false);
+	}
+}
+
+function resetApp()
+{
+	blastSound.volume = .5;
+	laserSound.volume = .5;
+	lostLifeSound.volume = .7;
+}
+
+function playSound(sound,volume)
+{
+	var tempSound = document.createElement("audio");
+	tempSound.setAttribute("src",sound);
+	tempSound.loop = false;
+	tempSound.volume = volume;
+	tempSound.play();
+	//sounds.push(tempSound);
+}
+
+function audioLoaded() {
+	canvasApp();
+}
+
+function initApp()
+{
+	loadCount = 0;
+	itemsToLoad = 3;
+}
 
 function canvasApp(){
 
 	var canvas = document.getElementById('canvas');
-  	
+
   	if (!canvas || !canvas.getContext) {
     	return;
   	}
@@ -31,9 +96,50 @@ function canvasApp(){
 	if (!context) {
    	 	return;
   	}
+
+  	function canvasSupport () {
+		return Modernizr.canvas;
+	}
+
+	/*function drawScreen()
+  	{
+  		context.fillStyle = "#000000";
+		context.fillText ("Duration:" + audioElement.duration, 20 ,20);
+		context.fillText ("Current time:" + audioElement.currentTime, 20 ,40);
+		context.fillText ("Loop: " + audioElement.loop, 20 ,60);
+		context.fillText ("Autoplay: " +audioElement.autoplay, 20 ,80);
+		context.fillText ("Muted: " + audioElement.muted, 20 ,100);
+		context.fillText ("Controls: " + audioElement.controls, 20 ,120);
+		context.fillText ("Volume: " + audioElement.volume, 20 ,140);
+		context.fillText ("Paused: " + audioElement.paused, 20 ,160);
+		context.fillText ("Ended: " + audioElement.ended, 20 ,180);
+		context.fillText ("Source: " + audioElement.currentSrc, 20 ,200);
+		context.fillText ("Can Play OGG: " + audioElement.canPlayType("audio/ogg"),
+		20 ,220);
+		context.fillText ("Can Play WAV: " + audioElement.canPlayType("audio/wav"),
+		20 ,240);
+		context.fillText ("Can Play MP3: " + audioElement.canPlayType("audio/mp3"),
+		20 ,260);
+  	}*/
+	/*
+	function updateLoadingStatus() {
+		var loadingStatus = document.getElementById("loadingStatus");
+		var audioElement = document.getElementById("theAudio");
+		var percentLoaded = parseInt(((audioElement.buffered.end(0) /
+		audioElement.duration) * 100));
+		document.getElementById("loadingStatus").innerHTML = 'loaded '
+		+ percentLoaded + '%';
+	}
+
+
+  	var audioElement = document.getElementById("theAudio");
+  	audioElement.play();
+  	drawScreen();
 	
+  	*/
+
 	var myVar1 = setInterval(main, 50);
-	var myVar2 = setInterval(newPolygon, 1000);
+	var myVar2 = setInterval(newPolygon, 1000 * ((50.0 -score)/50.0));
 	var myVar3 = setInterval(updateVelocities,300);
 
 	function distance(x1,y1,x2,y2)
@@ -54,8 +160,11 @@ function canvasApp(){
 				score++;
 				console.log("removed");
 				deletePolygon(i);
+				playSound(blastSound,.5);
+				return;
 			}
 		}
+		playSound(laserSound,.5);
 	}
 
 	function main()
@@ -68,11 +177,17 @@ function canvasApp(){
 			context.font =  "18px Arial";
 			context.fillStyle = "black";
 			context.fillText("Score: " + score,50,50);
+			context.fillText("Lives: " + lives,50,100);
 			context.stroke();
 			drawPolygons();
 		}
 		else
 		{
+			if(gameON == 1)
+			{
+				gameON = 0;
+				playSound(gameOver,.5);
+			}
 			context.font =  "18px Arial";
 			context.fillStyle = "black";
 			context.fillText("Game Over",canvas.width/2,canvas.height/2);
@@ -90,6 +205,7 @@ function canvasApp(){
 			{
 				deletePolygon(i);
 				lives--;
+				playSound(lostLifeSound,.5);
 			}
 		}
 		for(var i = 0; i < polygons; i++)
@@ -100,10 +216,6 @@ function canvasApp(){
 		}
 		console.log(polySides.length);
 	}
-
-	/*$('body').click(function(){
-  		console.log('clicked');
-	});*/
 
 	function updateVelocities()
 	{
